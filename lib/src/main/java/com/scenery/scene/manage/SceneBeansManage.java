@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.scenery.scene.annotation.Scene;
 import com.scenery.scene.model.SceneConfig;
-import com.alibaba.detail.core.shared.session.DetailSession;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -23,7 +22,7 @@ public class SceneBeansManage implements ApplicationContextAware {
 
     private ApplicationContext applicationContext;
 
-    private Map<Class<?>, List<SceneConfig>> sceneryConfigMap = new ConcurrentHashMap<>();
+    private final Map<Class<?>, List<SceneConfig>> sceneryConfigMap = new ConcurrentHashMap<>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -48,13 +47,9 @@ public class SceneBeansManage implements ApplicationContextAware {
                     .collect(Collectors.toList());
             });
 
-        String from = (String)DetailSession.currentDetailSession().getBusinessExt("from");
-        String buck = (String)DetailSession.currentDetailSession().getBusinessExt("bucket");
-
         SceneConfig hitSceneConfig = sceneConfigList
             .stream()
-            .filter(Objects::nonNull)
-            .sorted((x, y) -> {
+            .filter(Objects::nonNull).min((x, y) -> {
                 if (x.getDefault() && y.getDefault()) {
                     return 0;
                 } else if (x.getDefault() && !y.getDefault()) {
@@ -67,12 +62,6 @@ public class SceneBeansManage implements ApplicationContextAware {
                     return 0;
                 }
             })
-            .filter(sceneConfig -> {
-                String source = sceneConfig.getSource();
-                String bucket = sceneConfig.getBucket();
-                return source.equals(from) || bucket.equals(buck) || sceneConfig.getDefault();
-            })
-            .findFirst()
             .orElse(null);
         if (null == hitSceneConfig) {
             return null;
